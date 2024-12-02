@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.0">
+<title>IQ Indoor Map | Richardson IQ Indoor AQI</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight,wide.c63905c0.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight,wide.c63905c0.css">
+<link rel="modulepreload" href="./_observablehq/client.2a134474.js">
+<link rel="modulepreload" href="./_observablehq/runtime.9393ab6d.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.3ac83553.js">
+<link rel="modulepreload" href="./_npm/htl@0.3.1/063eb405.js">
+
+    <link rel="icon" href="./_file/observable.1af93621.png" type="image/png" sizes="32x32">
+    <style>
+      /* Reduce the sidebar width */
+      .sidebar {
+        width: 100px !important; /* Adjust to your desired width */
+      }
+
+      /* Ensure the main content shifts correctly */
+      .content {
+        margin-left: 110px; /* Sidebar width + padding */
+      }
+    </style>
+  
+<script type="module">
+
+import {define} from "./_observablehq/client.2a134474.js";
+import {registerFile} from "./_observablehq/stdlib.3ac83553.js";
+
+registerFile("./data/sensors.json", {"name":"./data/sensors.json","mimeType":"application/json","path":"./_file/data/sensors.cf57d0fc.json","lastModified":1732287867951,"size":5136});
+registerFile("./data/sensorsdata.json", {"name":"./data/sensorsdata.json","mimeType":"application/json","path":"./_file/data/sensorsdata.f596a715.json","lastModified":1733175676985,"size":2277});
+
+define({id: "bb35c271", inputs: ["FileAttachment","html"], outputs: ["sensorsData","sensors","container","elevation","gridFill","style","belt","smplrspace","smplr","mappedSensorsData","minValue","maxValue","legendContainer","space","viewerReady"], body: async (FileAttachment,html) => {
+ // Add sensor data here
+const sensorsData = await FileAttachment("./data/sensorsdata.json").json();
+
+//const exampleData = await FileAttachment("data/testdata.json").json();
+
+// Add sensor metadata here
+const sensors = await FileAttachment("./data/sensors.json").json();
+const container = html`<div id="smplr-container" style='
+  height: 900px; 
+  width: 80%; 
+  margin: auto; 
+  border-radius: 20px; 
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background-color: #ffffff; 
+  overflow: hidden; 
+  position: relative;' />`;
+const elevation = 2.25;//Inputs.range([0, 3], {label: "Elevation (grid & sphere)", step: 0.25, value: 2.75});
+const gridFill = 1; //Inputs.range([0.5, 1.5], {label: "Fill factor", step: 0.1});
+const style =  "bar-chart";//Inputs.radio(["bar-chart", "grid", "spheres"], {label: "Heatmap style", value: "bar-chart"});
+
+const belt = await import("https://cdn.jsdelivr.net/npm/@mobily/ts-belt@latest/+esm");
+const smplrspace = await import("https://cdn.jsdelivr.net/npm/@smplrspace/smplr-loader@latest/+esm");
+const smplr = await smplrspace.loadSmplrJs('esm');
+
+const mappedSensorsData = sensorsData
+  .map((d) => {
+    const sensor = sensors.find((s) => s.id === d.uuid);
+    if (!sensor) {
+      return null;
+    }
+    return { ...d, position: sensor.position };
+  })
+  .filter((d) => belt.G.isNotNullable(d));
+
+// Calculate the color domain dynamically
+const minValue = Math.min(...mappedSensorsData.map((d) => d.value));
+const maxValue = Math.max(...mappedSensorsData.map((d) => d.value));
+// Create the legend container after calculating min and max values
+const legendContainer = html`<div style='
+  position: absolute; 
+  right: 10px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  width: 40px; 
+  height: 300px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;'>
+  <span style="font-size: 12px; margin-bottom: 5px;">${maxValue}</span>
+  <div id="color-scale" style="width: 100%; height: 100%; background: linear-gradient(to bottom, red, yellow, green);"></div>
+  <span style="font-size: 12px; margin-top: 5px;">${minValue}</span>
+  </div>
+</div>`;
+
+
+const space = new smplr.Space({
+  spaceId: '678f175a-02e0-4228-a15e-3d87f767f585',
+  clientToken: 'pub_0aa5a7a87a7d46629076fe3a34bdaf1d',
+  containerId: 'smplr-container',
+});
+
+//console.log(mappedSensorsData);
+
+const viewerReady = (async () => {
+  await space.startViewer({
+    preview: false,
+    allowModeChange: true,
+    renderOptions: {
+      backgroundColor: '#F3F6F8',
+    },
+    autoRotate: true, // Enable automatic rotation
+    onError: (error) => console.error('Could not start viewer', error),
+    onReady: () => {
+      console.log('Viewer is ready');
+      // Add the data layer here after the viewer is ready
+      space.startAutoRotation(0.2);
+      space.addDataLayer({
+        id: 'hm',
+        type: 'heatmap',
+        style: style,
+        data: mappedSensorsData,
+        value: (d) => d.value,
+        color: smplr.Color.numericScale({
+          name: smplr.Color.NumericScale.RdYlGn,
+          domain: [minValue, maxValue], // Use dynamic min and max
+          invert: true,
+        }),
+        height: (v) => 5*(v - minValue) / (maxValue - minValue), // Normalize height to dynamic range
+        confidenceRadius: 12,
+        gridSize: 0.4,
+        gridFill: gridFill,
+        elevation: elevation,
+      
+      });
+    },
+  });
+})();
+
+await viewerReady; // Ensure viewer initialization completes
+// Add the legend container to the DOM
+
+// Function to refresh the page every 5 seconds
+setInterval(() => {
+
+  window.location.reload(); // Reloads the page every 5 seconds
+}, 300000); // 5000 ms = 5 seconds
+
+return {sensorsData,sensors,container,elevation,gridFill,style,belt,smplrspace,smplr,mappedSensorsData,minValue,maxValue,legendContainer,space,viewerReady};
+}});
+
+define({id: "f735d909", mode: "inline", inputs: ["maxValue","display"], body: async (maxValue,display) => {
+display(await(
+maxValue
+))
+}});
+
+define({id: "ddd5b55d", mode: "inline", inputs: ["minValue","display"], body: async (minValue,display) => {
+display(await(
+minValue
+))
+}});
+
+</script>
+</head>
+<body>
+<div id="observablehq-center">
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<div class="observablehq observablehq--block"><!--:bb35c271:--></div>
+<div style="height: 90%; width: 113%;">
+  <div id="smplr-container" style="
+  height: 700px; 
+  width: 80%; 
+  margin: auto; 
+  border-radius: 20px; 
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background-color: #ffffff; 
+  overflow: hidden;"></div>
+</div>
+<div style="
+  position: absolute; 
+  right: 50px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  width: 50px; 
+  height: 350px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;">
+  <span style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">PM 2.5</span>
+  <span style="font-size: 12px; margin-bottom: 5px;"><observablehq-loading></observablehq-loading><!--:f735d909:--> µg/m<sup>3</sup></span>
+  <div id="color-scale" style="width: 100%; height: 100%; background: linear-gradient(to bottom, red, yellow, green);"></div>
+  <span style="font-size: 12px; margin-top: 5px;"><observablehq-loading></observablehq-loading><!--:ddd5b55d:--> µg/m<sup>3</sup></span>
+</div>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="next" href="./aqi"><span>IQ Indoor Map</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-12-02T16:41:03">Dec 2, 2024</a>.</div>
+</footer>
+</div>
+</body>
+</html>
