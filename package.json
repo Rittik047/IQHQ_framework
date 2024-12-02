@@ -7,7 +7,7 @@
     "dev": "observable preview",
     "deploy": "observable deploy",
     "observable": "observable",
-    "install": "pip install -r requirements.txt"
+    
   },
   "dependencies": {
     "@influxdata/influxdb-client": "^1.35.0",
