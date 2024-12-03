@@ -77,12 +77,22 @@ const viewerReady = (async () => {
     renderOptions: {
       backgroundColor: '#F3F6F8',
     },
-    autoRotate: true, // Enable automatic rotation
+    cameraPlacement: {
+      alpha: Math.PI / 2 ,
+      beta:0,
+      radius: 15,
+      target: {
+        x: 40,
+        y: 40,
+        z: -25
+      }
+    },
+    //autoRotate: true, // Enable automatic rotation
     onError: (error) => console.error('Could not start viewer', error),
     onReady: () => {
       console.log('Viewer is ready');
       // Add the data layer here after the viewer is ready
-      space.startAutoRotation(0.2);
+      //space.startAutoRotation(0.2);
       space.addDataLayer({
         id: 'hm',
         type: 'heatmap',
@@ -95,12 +105,13 @@ const viewerReady = (async () => {
           invert: true,
         }),
         height: (v) => 5*(v - minValue) / (maxValue - minValue), // Normalize height to dynamic range
-        confidenceRadius: 12,
+        confidenceRadius: 15,
         gridSize: 0.4,
         gridFill: gridFill,
         elevation: elevation,
       
       });
+      
     },
   });
 })();
