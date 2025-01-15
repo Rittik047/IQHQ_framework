@@ -10,7 +10,7 @@ const queryApi = new InfluxDB({ url, token }).getQueryApi(org);
 
 const query = `
 from(bucket: "${bucket}")
-  |> range(start: -5d10m, stop: -5d)
+  |> range(start: -10m)
   |> filter(fn: (r) => r["device_name"] == "Indoor IQ Node 01" or r["device_name"] == "Indoor IQ Node 02" or r["device_name"] == "Indoor IQ Node 03" or r["device_name"] == "Indoor IQ Node 04" or r["device_name"] == "Indoor IQ Node 06" or r["device_name"] == "Indoor IQ Node 07" or r["device_name"] == "Indoor IQ Node 08" or r["device_name"] == "Indoor IQ Node 09" or r["device_name"] == "Indoor IQ Node 10" or r["device_name"] == "Indoor IQ Node 11" or r["device_name"] == "Indoor IQ Node 12" or r["device_name"] == "Indoor IQ Node 13" or r["device_name"] == "Indoor IQ Node 14" or r["device_name"] == "Indoor IQ Node 15" or r["device_name"] == "Indoor IQ Node 16" or r["device_name"] == "Indoor IQ Node 17" or r["device_name"] == "Indoor IQ Node 18" or r["device_name"] == "Indoor IQ Node 19" or r["device_name"] == "Indoor IQ Node 20" or r["device_name"] == "Indoor IQ Node 21")
   |> filter(fn: (r) => r["_measurement"] == "D739SENSERTD3")
   |> filter(fn: (r) => r["_field"] == "pm2_5")
